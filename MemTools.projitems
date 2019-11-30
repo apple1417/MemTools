@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>f6ab04ff-ea6e-42d6-8004-26d9389429a4</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>MemTools</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)MemManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MemIOExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pointer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SigScanner.cs" />
+  </ItemGroup>
+</Project>
