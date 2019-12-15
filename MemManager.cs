@@ -45,16 +45,7 @@ namespace MemTools {
       }
     }
 
-    public bool Is64Bit {
-      get {
-        bool isEmulated = false;
-        bool result = IsWow64Process(handle, ref isEmulated);
-        if (!result) {
-          throw new Win32Exception(Marshal.GetLastWin32Error());
-        }
-        return !isEmulated;
-      }
-    }
+    public bool Is64Bit { get; }
 
     private IntPtr handle;
     private bool _isHooked = true;
@@ -67,6 +58,13 @@ namespace MemTools {
         _isHooked = false;
         throw new Win32Exception(Marshal.GetLastWin32Error());
       }
+
+      bool isEmulated = false;
+      bool result = IsWow64Process(handle, ref isEmulated);
+      if (!result) {
+        throw new Win32Exception(Marshal.GetLastWin32Error());
+      }
+      Is64Bit = !isEmulated;
 
       if (Is64Bit && IntPtr.Size == 4) {
         Dispose();
