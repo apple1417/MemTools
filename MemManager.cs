@@ -35,8 +35,12 @@ namespace MemTools {
     private static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, IntPtr dwSize, ref IntPtr lpNumberOfBytesWritten);
 
     public Process HookedProcess;
+    public bool Is64Bit { get; }
+
+    private bool _isHooked = true;
     public bool IsHooked {
       get {
+        if (!_isHooked) { return false; }
         HookedProcess.Refresh();
         if (HookedProcess.HasExited) {
           _isHooked = false;
@@ -45,10 +49,7 @@ namespace MemTools {
       }
     }
 
-    public bool Is64Bit { get; }
-
     private IntPtr handle;
-    private bool _isHooked = true;
 
     public MemManager(Process processToHook) {
       HookedProcess = processToHook;
@@ -68,7 +69,7 @@ namespace MemTools {
 
       if (Is64Bit && IntPtr.Size == 4) {
         Dispose();
-        throw new Win32Exception(ERROR_BAD_EXE_FORMAT);
+        throw new Win32Exception(ERROR_BAD_EXE_FORMAT, "Tried to hook a 64 bit exe from a 32 bit process");
       }
     }
 
@@ -83,27 +84,32 @@ namespace MemTools {
       _isHooked = false;
     }
 
-    public IntPtr Alloc(long len) {
+    public IntPtr Alloc(long len) => Alloc(len, IntPtr.Zero);
+    public IntPtr Alloc(long len, IntPtr addr) {
       if (!IsHooked) {
         throw new Win32Exception(ERROR_INVALID_HANDLE, "Process is not hooked!");
       }
 
-      IntPtr addr = VirtualAllocEx(handle, IntPtr.Zero, new IntPtr(len), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-      if (addr == IntPtr.Zero) {
+      IntPtr allocAddr = VirtualAllocEx(handle, addr, new IntPtr(len), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+      if (allocAddr == IntPtr.Zero) {
         throw new Win32Exception(Marshal.GetLastWin32Error());
       }
 
-      return addr;
+      return allocAddr;
     }
 
     public byte[] Read(IntPtr addr, long len) {
       if (!IsHooked) {
         throw new Win32Exception(ERROR_INVALID_HANDLE, "Process is not hooked!");
       }
+      if (!Is64Bit && len > UInt32.MaxValue) {
+        throw new ArgumentException("Tried to read more than the maximum amount of bytes in a 32 bit process");
+      }
 
       IntPtr lenRead = IntPtr.Zero;
       byte[] buf = new byte[len];
       bool result = ReadProcessMemory(handle, addr, buf, new IntPtr(len), ref lenRead);
+      // TODO: Maybe at some point allow partial copies?
       if (!result) {
         throw new Win32Exception(Marshal.GetLastWin32Error());
       }
